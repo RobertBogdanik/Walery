@@ -40,308 +40,335 @@
         </script>
 
         <script type="module">
+             function round(value, decimals){
+                return Number(Math.round(value + "e"+decimals)+"e-"+decimals).toFixed(decimals);
+            }
+            
+            import * as THREE from 'three';
 
-        import * as THREE from 'three';
-
-        const maap = [
-            ["emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp"],
-            ["emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp"],
-            ["#00ff00", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp"],
-            ["emp", "emp", "#00ff00", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp"],
-            ["emp", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp"],
-            ["emp", "emp", "emp", "emp", "#ff0000", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp"],
-            ["emp", "#ff0000", "emp", "#ff0000", "#ff0000", "#0000ff", "emp", "emp", "#ff0000", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp"],
-            ["emp", "#0000ff", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff00ff"],
-            ["#ff0000", "#ff0000", "emp", "emp", "emp", "#ff0000", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp"], 
-        ]
-
-        const scene = new THREE.Scene();
-        const blockSize = 100;
-        function round(value, decimals){
-            return Number(Math.round(value + "e"+decimals)+"e-"+decimals).toFixed(decimals);
-        }
-        const camera = new THREE.OrthographicCamera(1000 / - 2, 1000 / 2, 500 / 2, 500 / - 2, 1, 100);
-        camera.position.z = 100;
-        camera.position.y = 300;
-        camera.position.x = 330;
-
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize( window.innerWidth, window.innerHeight );
-        document.body.appendChild( renderer.domElement );
-
-        maap.forEach((row, y) => {
-            row.forEach((col, x) => {
-                const geometry = new THREE.BoxGeometry( blockSize, blockSize, 1 );
-                const material = new THREE.MeshBasicMaterial( { color: (col=="emp"? "white" : col) } );
-                const cube = new THREE.Mesh( geometry, material );
-                cube.position.x = x * blockSize;
-                cube.position.y = y * blockSize;
-                scene.add( cube );
-            })
-        })
-        class Player {
-            constructor(x, y) {
-                this.blockSize = 100
-                this.proportion = {
-                    x: 0.4,
-                    y: 0.6,
+            class Map{
+                async getMap(name){
+                    const response = await fetch(`./maps/${name}.json`);
+                    const data = await response.json();
+                    return data;
                 }
-                this.acceleration = 0
-                this.onGround = false
-                this.inJump = false
-                this.currentCollection = "sthay"
-                this.currentSkin = 0
-                this.currentFrame = 0
-                this.lastSkinChange = new Date().getTime()
-
-                this.createPlayer(x, y)
-                this.gravityInt = setInterval(() => {
-                    this.gravity()
-                }, 30);
-
-                this.gravity = this.gravity.bind(this);
-                this.move = this.move.bind(this);
-                this.jump = this.jump.bind(this);
-                this.createPlayer = this.createPlayer.bind(this);
-                this.changeSkin = this.changeSkin.bind(this);
-            }
-            createPlayer(x, y){
-                const skins = {
-                    stay: [new THREE.TextureLoader().load( '/texture/player/stay.png' )],
-                    runRight: [
-                        new THREE.TextureLoader().load( '/texture/player/runRight_0.png' ),
-                        new THREE.TextureLoader().load( '/texture/player/runRight_1.png' )
-                    ],
-                    runLeft: [
-                        new THREE.TextureLoader().load( '/texture/player/runLeft_0.png' )
-                    ],
-                    jump: [
-                        new THREE.TextureLoader().load( '/texture/player/jump.png' )
-                    ],
-                    fall: [
-                        new THREE.TextureLoader().load( '/texture/player/fall.png' )
-                    ]
-                }
-                this.skins = skins
-
-                this.geometry = new THREE.BoxGeometry( this.blockSize*this.proportion.x, this.blockSize*this.proportion.y, 1 );
-                this.material = new THREE.MeshBasicMaterial( { map: this.skins.stay[0] } );
-                this.mesh = new THREE.Mesh( this.geometry, this.material );
-                this.mesh.scale.y = -1;
-                this.mesh.position.x = x * this.blockSize-(1-this.proportion.x)/2*this.blockSize+0*this.blockSize;
-                this.mesh.position.y = y * this.blockSize-(1-this.proportion.y)/2*this.blockSize;
-                scene.add( this.mesh );
-                renderer.render( scene, camera );
-            }
-            getTLP(hv = 0, vv = 0){
-                    const ltx = Math.floor((this.mesh.position.x+(1-this.proportion.x)/2*this.blockSize + hv*this.blockSize)/this.blockSize);
-                    const lty = Math.floor((this.mesh.position.y+(1-this.proportion.y)/2*this.blockSize + vv*this.blockSize)/this.blockSize);
-                    return { x: ltx, y: lty }
-            }
-            getTRP(hv = 0, vv = 0){
-                    const rtx = Math.floor((this.mesh.position.x+(1-this.proportion.x)/2*this.blockSize+this.proportion.x*this.blockSize + hv*this.blockSize)/this.blockSize);
-                    const rty = Math.floor((this.mesh.position.y+(1-this.proportion.y)/2*this.blockSize + vv*this.blockSize)/this.blockSize);
-                    return { x: rtx, y: rty }
-            }
-            getBLP(hv = 0, vv = 0){
-                    const lbx = Math.floor((this.mesh.position.x+(1-this.proportion.x)/2*this.blockSize + hv*this.blockSize)/this.blockSize);
-                    const lby = Math.floor((this.mesh.position.y+(1-this.proportion.y)/2*this.blockSize+(this.proportion.y-0.0001)*this.blockSize + vv*this.blockSize)/this.blockSize);
-                    return { x: lbx, y: lby }
-            }
-            getBRP(hv = 0, vv = 0){
-                    const rbx = Math.floor((this.mesh.position.x+(1-this.proportion.x)/2*this.blockSize+this.proportion.x*this.blockSize + hv*this.blockSize)/this.blockSize);
-                    const rby = Math.floor((this.mesh.position.y+(1-this.proportion.y)/2*this.blockSize+(this.proportion.y-0.0001)*this.blockSize + vv*this.blockSize)/this.blockSize);
-                    return { x: rbx, y: rby }
             }
 
-            gravity(){
-                const p1 = this.getTLP(0, 0)
-                const p2 = this.getTRP(0, 0)
-                const p3 = this.getBLP(0, 0)
-                const p4 = this.getBRP(0, 0)
-                
-                const points = []
-                points.push(p1)
-                if(!points.some(p => p.x == p2.x && p.y == p2.y)){ points.push(p2) }
-                if(!points.some(p => p.x == p3.x && p.y == p3.y)){ points.push(p3) }
-                if(!points.some(p => p.x == p4.x && p.y == p4.y)){ points.push(p4) }
-                
-                let allEmpty = true
-                for(let i = 0; i < points.length; i++){
-                    if(maap[points[i].y][points[i].x] != "emp"){
-                        allEmpty = false
-                        break
-                    }
-                }
-                if(allEmpty){
-                    this.acceleration += (this.acceleration<0.4) ? 0.015 : 0
-                    this.move(0, this.acceleration, true)
-                }else{
+            class Player{
+                constructor(x, y) {
+                    this.map = []
+                    this.blockSize = 100
+                    this.proportion = { x: 0.4, y: 0.6 }
                     this.acceleration = 0
-                }
-            }
-
-            jump(){
-                const gru = this.onGround
-                if(gru===true && !this.inJump){
-                    this.inJump = true
                     this.onGround = false
-                    this.acceleration = 0
-                    this.acceleration = -0.20
-                }
-            }
+                    this.inJump = false
+                    this.currentCollection = "sthay"
+                    this.currentSkin = 0
+                    this.currentFrame = 0
+                    this.lastSkinChange = new Date().getTime()
+                    this.cameraVector = { x: 0, y: 0 }
 
-            changeSkin(collection, exc = false){
-                if(exc){
-                    if(new Date().getTime()-this.lastSkinChange>40){
-                        this.lastSkinChange = new Date().getTime()
-                        this.currentFrame = 0
-                        this.currentSkin = 0
-                        this.currentCollection = collection
-                        this.material.map = this.skins["stay"][0]
-                        this.material.needsUpdate = true
+                    this.gravity = this.gravity.bind(this);
+                    this.move = this.move.bind(this);
+                    this.jump = this.jump.bind(this);
+                    this.createPlayer = this.createPlayer.bind(this);
+                    this.changeSkin = this.changeSkin.bind(this);
+                }
+                createPlayer(x, y, map){
+                    this.map = map
+                    const skins = {
+                        stay: [new THREE.TextureLoader().load( '/texture/player/stay.png' )],
+                        runRight: [
+                            new THREE.TextureLoader().load( '/texture/player/runRight_0.png' ),
+                            new THREE.TextureLoader().load( '/texture/player/runRight_1.png' )
+                        ],
+                        runLeft: [
+                            new THREE.TextureLoader().load( '/texture/player/runLeft_0.png' )
+                        ],
+                        jump: [
+                            new THREE.TextureLoader().load( '/texture/player/jump.png' )
+                        ],
+                        fall: [
+                            new THREE.TextureLoader().load( '/texture/player/fall.png' )
+                        ]
                     }
-                }else{
-                    if(this.currentCollection == collection){ 
-                        if(this.skins[collection].length > 1){
+                    this.skins = skins
+
+                    this.geometry = new THREE.BoxGeometry( this.blockSize*this.proportion.x, this.blockSize*this.proportion.y, 1 );
+                    this.material = new THREE.MeshBasicMaterial( { map: this.skins.stay[0] } );
+                    this.mesh = new THREE.Mesh( this.geometry, this.material );
+                    this.mesh.scale.y = -1;
+                    this.mesh.position.x = x * this.blockSize-(1-this.proportion.x)/2*this.blockSize+0*this.blockSize;
+                    this.mesh.position.y = y * this.blockSize-(1-this.proportion.y)/2*this.blockSize;
+                    return this.mesh
+                }
+                getTLP(hv = 0, vv = 0){
+                    try{
+                        const ltx = Math.floor((this.mesh.position.x+(1-this.proportion.x)/2*this.blockSize + hv*this.blockSize)/this.blockSize);
+                        const lty = Math.floor((this.mesh.position.y+(1-this.proportion.y)/2*this.blockSize + vv*this.blockSize)/this.blockSize);
+                        return { x: ltx, y: lty }
+                    }catch(e){}
+                }
+                getTRP(hv = 0, vv = 0){
+                    try{
+                        const rtx = Math.floor((this.mesh.position.x+(1-this.proportion.x)/2*this.blockSize+this.proportion.x*this.blockSize + hv*this.blockSize)/this.blockSize);
+                        const rty = Math.floor((this.mesh.position.y+(1-this.proportion.y)/2*this.blockSize + vv*this.blockSize)/this.blockSize);
+                        return { x: rtx, y: rty }
+                    }catch(e){}
+                }
+                getBLP(hv = 0, vv = 0){
+                    try{
+                        const lbx = Math.floor((this.mesh.position.x+(1-this.proportion.x)/2*this.blockSize + hv*this.blockSize)/this.blockSize);
+                        const lby = Math.floor((this.mesh.position.y+(1-this.proportion.y)/2*this.blockSize+(this.proportion.y-0.0001)*this.blockSize + vv*this.blockSize)/this.blockSize);
+                        return { x: lbx, y: lby }
+                    }catch(e){}
+                }
+                getBRP(hv = 0, vv = 0){
+                    try{
+                        const rbx = Math.floor((this.mesh.position.x+(1-this.proportion.x)/2*this.blockSize+this.proportion.x*this.blockSize + hv*this.blockSize)/this.blockSize);
+                        const rby = Math.floor((this.mesh.position.y+(1-this.proportion.y)/2*this.blockSize+(this.proportion.y-0.0001)*this.blockSize + vv*this.blockSize)/this.blockSize);
+                        return { x: rbx, y: rby }
+                    }catch(e){}
+                }
+
+                gravity(){
+                        try{
+                        const p1 = this.getTLP(0, 0)
+                        const p2 = this.getTRP(0, 0)
+                        const p3 = this.getBLP(0, 0)
+                        const p4 = this.getBRP(0, 0)
+                        
+                        const points = []
+                        points.push(p1)
+                        if(!points.some(p => p.x == p2.x && p.y == p2.y)){ points.push(p2) }
+                        if(!points.some(p => p.x == p3.x && p.y == p3.y)){ points.push(p3) }
+                        if(!points.some(p => p.x == p4.x && p.y == p4.y)){ points.push(p4) }
+                        let allEmpty = true
+                        for(let i = 0; i < points.length; i++){
+                            if(this.map[points[i].y][points[i].x] != "emp"){
+                                allEmpty = false
+                                break
+                            }
+                        }
+                        if(allEmpty){
+                            this.acceleration += (this.acceleration<0.4) ? 0.015 : 0
+                            this.move(0, this.acceleration, true)
+                        }else{
+                            this.acceleration = 0
+                        }
+                    }catch(e){}
+
+                    const toReturn = this.cameraVector
+                    this.cameraVector = { x: 0, y: 0 }
+
+                    return toReturn
+                }
+
+                jump(){
+                    const gru = this.onGround
+                    if(gru===true && !this.inJump){
+                        this.inJump = true
+                        this.onGround = false
+                        this.acceleration = 0
+                        this.acceleration = -0.20
+                    }
+                }
+
+                changeSkin(collection, exc = false){
+                    if(exc){
+                        if(new Date().getTime()-this.lastSkinChange>40){
                             this.lastSkinChange = new Date().getTime()
-                            this.currentFrame += 1
-                            if(this.currentFrame >= 6){
-                                this.currentFrame = 0
-                                this.currentSkin = (this.currentSkin+1)%this.skins[collection].length
-                                this.material.map = this.skins[collection][this.currentSkin]
-                                this.material.needsUpdate = true
+                            this.currentFrame = 0
+                            this.currentSkin = 0
+                            this.currentCollection = collection
+                            this.material.map = this.skins["stay"][0]
+                            this.material.needsUpdate = true
+                        }
+                    }else{
+                        if(this.currentCollection == collection){ 
+                            if(this.skins[collection].length > 1){
+                                this.lastSkinChange = new Date().getTime()
+                                this.currentFrame += 1
+                                if(this.currentFrame >= 6){
+                                    this.currentFrame = 0
+                                    this.currentSkin = (this.currentSkin+1)%this.skins[collection].length
+                                    this.material.map = this.skins[collection][this.currentSkin]
+                                    this.material.needsUpdate = true
+                                }
+                            }else{
+                                this.lastSkinChange = new Date().getTime()
                             }
                         }else{
                             this.lastSkinChange = new Date().getTime()
+                            this.currentFrame = 0
+                            this.currentSkin = 0
+                            this.currentCollection = collection
+                            this.material.map = this.skins[collection][this.currentSkin]
+                            this.material.needsUpdate = true
                         }
-                    }else{
-                        this.lastSkinChange = new Date().getTime()
-                        this.currentFrame = 0
-                        this.currentSkin = 0
-                        this.currentCollection = collection
-                        this.material.map = this.skins[collection][this.currentSkin]
-                        this.material.needsUpdate = true
                     }
                 }
-            }
 
-            move(x, y, gravity=false) {
-                for(let i=1; i<(gravity==true ? 5 : 3); i++){
-                    const ny = y==0 ? 0 : round(y/i, 6)
-                    const nx = x==0 ? 0 : round(x/i, 6)
-                    const p1 = this.getTLP(nx, ny)
-                    const p2 = this.getTRP(nx, ny)
-                    const p3 = this.getBLP(nx, ny)
-                    const p4 = this.getBRP(nx, ny)
+                move(x, y, gravity=false) {
+                    for(let i=1; i<(gravity==true ? 5 : 3); i++){
+                        const ny = y==0 ? 0 : round(y/i, 6)
+                        const nx = x==0 ? 0 : round(x/i, 6)
+                        const p1 = this.getTLP(nx, ny)
+                        const p2 = this.getTRP(nx, ny)
+                        const p3 = this.getBLP(nx, ny)
+                        const p4 = this.getBRP(nx, ny)
 
-                    if((maap[p3.y][p3.x]!="emp" || maap[p4.y][p4.x]!="emp") && gravity){
+                        if((this.map[p3.y][p3.x]!="emp" || this.map[p4.y][p4.x]!="emp") && gravity){
+                            this.onGround = true;
+                            this.inJump = false;
+                        }
+
+                        const points = []
+                        points.push(p1)
+                        if(!points.some(p => p.x == p2.x && p.y == p2.y)){ points.push(p2) }
+                        if(!points.some(p => p.x == p3.x && p.y == p3.y)){ points.push(p3) }
+                        if(!points.some(p => p.x == p4.x && p.y == p4.y)){ points.push(p4) }
+                        let all = true;
+                        for(let p of points){
+                            if(this.map[p.y][p.x] != "emp"){
+                                all = false;
+                                break;
+                            }
+                        }
+                        if(all){
+                            this.mesh.position.x += nx*this.blockSize;
+                            this.mesh.position.y += ny*this.blockSize;
+                            
+                            if(this.map[0].length*this.blockSize > window.innerWidth){
+                                this.cameraVector.x += this.blockSize*nx;
+                            }
+                            if(this.map.length*this.blockSize > window.innerHeight){
+                                this.cameraVector.y += this.blockSize*ny;
+                            }
+                            if(nx>0){
+                                this.changeSkin("runRight")
+                            }
+                            if(nx<0){
+                                this.changeSkin("runLeft")
+                            }
+                            if(ny>0){
+                                this.changeSkin("jump")
+                            }
+                            if(ny<0){
+                                this.changeSkin("fall")
+                            }
+
+                            return true
+                        }
+                    }
+                    if(gravity){
+                        this.acceleration = 0;
                         this.onGround = true;
-                        this.inJump = false;
                     }
+                    this.changeSkin("stay", true)
+                }
+            }
 
-                    const points = []
-                    points.push(p1)
-                    if(!points.some(p => p.x == p2.x && p.y == p2.y)){ points.push(p2) }
-                    if(!points.some(p => p.x == p3.x && p.y == p3.y)){ points.push(p3) }
-                    if(!points.some(p => p.x == p4.x && p.y == p4.y)){ points.push(p4) }
-                    let all = true;
-                    for(let p of points){
-                        if(maap[p.y][p.x] != "emp"){
-                            all = false;
-                            break;
+            class Camera extends THREE.OrthographicCamera {
+                constructor(){
+                    super(1000 / - 2, 1000 / 2, 500 / 2, 500 / - 2, 1, 100);
+                    this.position.z = 100;
+                    this.position.y = 300;
+                    this.position.x = 330;
+                    this.speed = 10;
+                }
+            }
+
+            class Screan{
+                constructor(){
+                    this.player = new Player();
+                    this.map = new Map();
+                    this.camera = new Camera();
+                    this.blockSize = 100;
+                    this.renderer = new THREE.WebGLRenderer();
+                    this.keysPressed = {};
+
+                    document.addEventListener('keydown', (event) => {
+                        if(event.key == " "){
+                            this.keysPressed["Space"] = true;
+                        }else{
+                            this.keysPressed[event.key] = true;
                         }
-                    }
-                    if(all){
-                        this.mesh.position.x += nx*this.blockSize;
-                        this.mesh.position.y += ny*this.blockSize;
+
                         
-                        if(maap[0].length*this.blockSize > window.innerWidth){
-                            camera.position.x += this.blockSize*nx;
+                    });
+                    document.addEventListener('keyup', (event) => {
+                        if(event.key == " "){
+                            delete this.keysPressed["Space"];
+                        }else{
+                            delete this.keysPressed[event.key];
                         }
-                        if(maap.length*this.blockSize > window.innerHeight){
-                            camera.position.y += this.blockSize*ny;
-                        }
-                        if(nx>0){
-                            this.changeSkin("runRight")
-                        }
-                        if(nx<0){
-                            this.changeSkin("runLeft")
-                        }
-                        if(ny>0){
-                            this.changeSkin("jump")
-                        }
-                        if(ny<0){
-                            this.changeSkin("fall")
-                        }
+                    });
 
-                        renderer.render( scene, camera );
-                        return true
+                    this.init();
+                    setInterval(this.rand.bind(this), 1000/30);
+
+                    this.init = this.init.bind(this);
+                }
+                async rand(){
+                    const vectopr = this.player.gravity();
+                    this.camera.position.x += vectopr.x;
+                    this.camera.position.y += vectopr.y;
+
+                    if(this.keysPressed["ArrowUp"]){
+                        this.player.move(0, -0.2);
                     }
+                    if(this.keysPressed["ArrowDown"]){
+                        this.player.move(0, 0.1);
+                    }
+                    if(this.keysPressed[ "ArrowLeft"]){
+                        this.player.move(-0.1, 0);
+                    }
+                    if(this.keysPressed["ArrowRight"]){
+                        this.player.move(0.1, 0);
+                    }
+                    if(this.keysPressed["Space"]){
+                        this.player.jump();
+                    }
+                    this.renderer.render( this.scene, this.camera );
                 }
-                renderer.render( scene, camera );
-                if(gravity){
-                    this.acceleration = 0;
-                    this.onGround = true;
+                async init(){
+                    this.renderer.setSize( window.innerWidth, window.innerHeight, false );
+                    document.body.appendChild( this.renderer.domElement );
+
+                    const scene = new THREE.Scene();
+                    this.scene = scene;
+
+                    const map = await this.map.getMap("1-1");
+
+                    map.forEach((row, y) => {
+                        row.forEach((col, x) => {
+                            const geometry = new THREE.BoxGeometry( this.blockSize, this.blockSize, 1 );
+                            const material = new THREE.MeshBasicMaterial( { color: (col=="emp"? "white" : col) } );
+                            const cube = new THREE.Mesh( geometry, material );
+                            cube.position.x = x * this.blockSize;
+                            cube.position.y = y * this.blockSize;
+                            scene.add( cube );
+                        })
+                    })
+
+                    scene.add(this.player.createPlayer(1,3,map))
                 }
-                this.changeSkin("stay", true)
-            }
-        }
-
-        const player = new Player(1, 3);
-
-        let keysPressed = {};
-
-        document.addEventListener('keydown', (event) => {
-            if(event.key == " "){
-                keysPressed["Space"] = true;
-            }else{
-                keysPressed[event.key] = true;
             }
 
-            
-        });
-        document.addEventListener('keyup', (event) => {
-            if(event.key == " "){
-                delete keysPressed["Space"];
-            }else{
-                delete keysPressed[event.key];
-            }
-        });
+            class Game extends Screan{
+                constructor(){
+                    super();
+                    this.startGame();
+                }
+                startGame(){
+                    console.log("ss")
+                    this.init();
 
-        setInterval(() => {
-            if(keysPressed["ArrowUp"]){
-                player.move(0, -0.2);
-            }
-            if(keysPressed["ArrowDown"]){
-                player.move(0, 0.1);
-            }
-            if(keysPressed[ "ArrowLeft"]){
-                player.move(-0.1, 0);
-            }
-            if(keysPressed["ArrowRight"]){
-                player.move(0.1, 0);
-            }
-            if(keysPressed["Space"]){
-                player.jump();
+                }
             }
 
-            if(keysPressed["w"]){
-                camera.position.y -= 2;
-            }else if(keysPressed["s"]){
-                camera.position.y += 2;
-            }else if(keysPressed["a"]){
-                camera.position.x -= 2;
-            }else if(keysPressed["d"]){
-                camera.position.x += 2;
-            }else if(keysPressed["q"]){
-                camera.position.z -= 2;
-            }else if(keysPressed["e"]){
-                camera.position.z += 2;
-            }
-            renderer.render( scene, camera );
-        }, 30);
-
+            const game = new Game();
 
         </script>
 </body>
