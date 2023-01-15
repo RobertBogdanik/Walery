@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body{
+            margin: 0;
+            overflow: hidden;
+        }
+        img{
+            position: absolute;
+            z-index: 200;
+            bottom: -50px;
+            width: 80%;
+            margin-left: 10%;
+        }
+        canvas{
+            position: absolute;
+            z-index: 100;
+
+            /* mirror */
+            transform: scaleX(-1);
+            transform: scaleY(-1);
+
+        }
+    </style>
+</head>
+<body>
+    <script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+
+        <script type="importmap">
+        {
+            "imports": {
+            "three": "https://unpkg.com/three@0.146.0/build/three.module.js"
+            }
+        }
+        </script>
+
+        <script type="module">
+
+        import * as THREE from 'three';
+
+        const maap = [
+            ["emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp"],
+            ["emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp"],
+            ["#00ff00", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp"],
+            ["emp", "emp", "#00ff00", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp"],
+            ["emp", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp"],
+            ["emp", "emp", "emp", "emp", "#ff0000", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp"],
+            ["emp", "#ff0000", "emp", "#ff0000", "#ff0000", "#0000ff", "emp", "emp", "#ff0000", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp"],
+            ["emp", "#0000ff", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff00ff"],
+            ["#ff0000", "#ff0000", "emp", "emp", "emp", "#ff0000", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp"],
+            // ["emp", "emp", "emp", "emp", "#ff0000", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp"],
+            // ["emp", "#ff0000", "emp", "#0000ff", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp"],
+            // ["emp", "#ff0000", "#00ff00", "#ff0000", "#ff0000", "emp", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "#ff0000", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp"],
+            // ["#ff0000", "#ff0000", "#ff0000", "#ff0000", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp", "emp"],
+        ]
+
+        const scene = new THREE.Scene();
+        const blockSize = 100;
+        function round(value, decimals){
+            return Number(Math.round(value + "e"+decimals)+"e-"+decimals).toFixed(decimals);
+        }
+        const camera = new THREE.OrthographicCamera(1000 / - 2, 1000 / 2, 500 / 2, 500 / - 2, 1, 100);
+        camera.position.z = 100;
+        camera.position.y = 300;
+        camera.position.x = 475;
+        console.log(window.outerWidth, window.innerWidth)
+
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        document.body.appendChild( renderer.domElement );
+
+        // const maaps = [...maap].reverse();
+        maap.forEach((row, y) => {
+            row.forEach((col, x) => {
+                const geometry = new THREE.BoxGeometry( blockSize, blockSize, 1 );
+                const material = new THREE.MeshBasicMaterial( { color: (col=="emp"? "white" : col) } );
+                const cube = new THREE.Mesh( geometry, material );
+                cube.position.x = x * blockSize;
+                cube.position.y = y * blockSize;
+                scene.add( cube );
+            })
+        })
+        class Player {
+            constructor(x, y) {
+                this.blockSize = 100
+                this.proportion = {
+                    x: 0.4,
+                    y: 0.6,
+                }
+                this.acceleration = 0
+                this.onGround = false
+                this.inJump = false
+                this.geometry = new THREE.BoxGeometry( this.blockSize*this.proportion.x, this.blockSize*this.proportion.y, 1 );
+                this.texture = new THREE.TextureLoader().load( '/texture/player/stay.png' );
+                this.material = new THREE.MeshBasicMaterial( { map: this.texture } );
+                this.mesh = new THREE.Mesh( this.geometry, this.material );
+                this.mesh.position.x = x * this.blockSize-(1-this.proportion.x)/2*this.blockSize+0*this.blockSize;
+                this.mesh.position.y = y * this.blockSize-(1-this.proportion.y)/2*this.blockSize;
+                // this.mesh.position.y = 0
+                // this.mesh.position.x = 0
+                // this.mesh.position.x = 1 * this.blockSize-0.3*this.blockSize;
+                // this.mesh.position.y = 0 * this.blockSize-0.2*this.blockSize;
+                // this.mesh.position.y = (5-0.0001) * this.blockSize+0.2*this.blockSize;
+                scene.add( this.mesh );
+                renderer.render( scene, camera );
+
+                this.gravityInt = setInterval(() => {
+                    // if(this.acceleration > 0){
+                    //     this.inJump = false
+                    // }
+                    // const ry = Math.ceil((this.mesh.position.y-0.04*this.blockSize)/this.blockSize+(1-this.proportion.y)/2)-1;
+                    // const rx = (this.mesh.position.x/this.blockSize%1<1-(1-this.proportion.x)/2-0.0001&&this.mesh.position.x/this.blockSize%1>(1-this.proportion.x)/2+0.0001 ? [Math.floor(this.mesh.position.x/this.blockSize), Math.ceil(this.mesh.position.x/this.blockSize)] : (
+                    //     this.mesh.position.x/this.blockSize%1 <= (1-this.proportion.x)/2+0.0001 ? Math.floor(this.mesh.position.x/this.blockSize) : Math.ceil(this.mesh.position.x/this.blockSize)
+                    // ))
+                    // // !this.inJump ? this.gravity() : null
+                    // if(this.inJump){
+                    //     console.log(">>>> ", (this.blockSize-0.2*this.blockSize)/this.mesh.position.y)
+                    //     console.log(">>>> ", rx, ry, ((this.mesh.position.y-0.04*this.blockSize)/this.blockSize+(1-this.proportion.y)/2)-1, ((this.mesh.position.y)/this.blockSize+(1-this.proportion.y)/2)-1)
+                    //     if((!Array.isArray(rx) && maap[ry][rx] != "emp") || (Array.isArray(rx) && (maap[ry][rx[0]] != "emp" || maap[ry][rx[1]] != "emp"))){
+                    //         this.inJump = false
+                    //         this.acceleration = 0.1
+                    //     }else{
+                    //         if(this.acceleration<0.1){
+                    //             this.acceleration += 0.04
+                    //             let r2y = Math.ceil((this.mesh.position.y-0.04*this.blockSize)/this.blockSize+(1-this.proportion.y)/2+this.acceleration)-1;
+                    //             if((!Array.isArray(rx) && maap[r2y][rx] != "emp") || (Array.isArray(rx) && (maap[r2y][rx[0]] != "emp" || maap[r2y][rx[1]] != "emp"))){
+
+                    //                 this.inJump = false
+                    //             this.acceleration = 0.1
+                    //             }else{
+                    //                 console.log(r2y)
+                    //                 this.move(0, this.acceleration)
+                    //             }
+                    //         }else{
+                    //             this.inJump = false
+                    //             this.acceleration = 0.1
+                    //         }
+                    //     }
+                    // }else{
+                        this.gravity()
+                    // }
+                }, 30);
+
+                this.gravity = this.gravity.bind(this);
+                this.move = this.move.bind(this);
+                this.jump = this.jump.bind(this);
+            }
+            getTLP(hv = 0, vv = 0){
+                    const ltx = Math.floor((this.mesh.position.x+(1-this.proportion.x)/2*this.blockSize + hv*this.blockSize)/this.blockSize);
+                    const lty = Math.floor((this.mesh.position.y+(1-this.proportion.y)/2*this.blockSize + vv*this.blockSize)/this.blockSize);
+                    return { x: ltx, y: lty }
+            }
+            getTRP(hv = 0, vv = 0){
+                    const rtx = Math.floor((this.mesh.position.x+(1-this.proportion.x)/2*this.blockSize+this.proportion.x*this.blockSize + hv*this.blockSize)/this.blockSize);
+                    // const rtx = Math.floor((this.mesh.position.x+((1-this.proportion.x)/2*this.blockSize)*2 + hv*this.blockSize)/this.blockSize);
+                    const rty = Math.floor((this.mesh.position.y+(1-this.proportion.y)/2*this.blockSize + vv*this.blockSize)/this.blockSize);
+                    return { x: rtx, y: rty }
+            }
+            getBLP(hv = 0, vv = 0){
+                    const lbx = Math.floor((this.mesh.position.x+(1-this.proportion.x)/2*this.blockSize + hv*this.blockSize)/this.blockSize);
+                    const lby = Math.floor((this.mesh.position.y+(1-this.proportion.y)/2*this.blockSize+(this.proportion.y-0.0001)*this.blockSize + vv*this.blockSize)/this.blockSize);
+                    return { x: lbx, y: lby }
+            }
+            getBRP(hv = 0, vv = 0){
+                    const rbx = Math.floor((this.mesh.position.x+(1-this.proportion.x)/2*this.blockSize+this.proportion.x*this.blockSize + hv*this.blockSize)/this.blockSize);
+                    const rby = Math.floor((this.mesh.position.y+(1-this.proportion.y)/2*this.blockSize+(this.proportion.y-0.0001)*this.blockSize + vv*this.blockSize)/this.blockSize);
+                    return { x: rbx, y: rby }
+            }
+
+            gravity(){
+                const p1 = this.getTLP(0, 0)
+                const p2 = this.getTRP(0, 0)
+                const p3 = this.getBLP(0, 0)
+                const p4 = this.getBRP(0, 0)
+                // console.log(p1, p2, p3, p4)
+                
+                const points = []
+                points.push(p1)
+                if(!points.some(p => p.x == p2.x && p.y == p2.y)){ points.push(p2) }
+                if(!points.some(p => p.x == p3.x && p.y == p3.y)){ points.push(p3) }
+                if(!points.some(p => p.x == p4.x && p.y == p4.y)){ points.push(p4) }
+// console.log("cpos: ", points)
+                // if all points are empty
+                let allEmpty = true
+                for(let i = 0; i < points.length; i++){
+                    // console.log([points[i].y],[points[i].x])
+                    if(maap[points[i].y][points[i].x] != "emp"){
+                        allEmpty = false
+                        break
+                    }
+                }
+                if(allEmpty){
+                    this.acceleration += (this.acceleration<0.4) ? 0.015 : 0
+                    this.move(0, this.acceleration, true)
+                }else{
+                    // console.log("cgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg")
+                    this.acceleration = 0
+                }
+                // if(points.every(p => maap[p.y][p.x] === "emp")){
+                //     this.acceleration += 0.04
+                //     console.log("run!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                //     this.move(0, this.acceleration)
+                // }else{
+                //     this.acceleration = 0
+                // }
+
+                // console.log(points)
+                // console.log()
+                // console.log(this.mesh.position.y, this.mesh.position.x,
+                // Math.ceil(23.66),
+                // Math.floor(23.66))
+                // this.move(0, 0.4)
+                // const ry = Math.ceil(this.mesh.position.y/this.blockSize-(1-this.proportion.y)/2)-1;
+                // const rx = (this.mesh.position.x/this.blockSize%1<1-(1-this.proportion.x)/2-0.0001&&this.mesh.position.x/this.blockSize%1>(1-this.proportion.x)/2+0.0001 ? [Math.floor(this.mesh.position.x/this.blockSize), Math.ceil(this.mesh.position.x/this.blockSize)] : (
+                //     this.mesh.position.x/this.blockSize%1 <= (1-this.proportion.x)/2+0.0001 ? Math.floor(this.mesh.position.x/this.blockSize) : Math.ceil(this.mesh.position.x/this.blockSize)
+                // ))
+
+                // if(Array.isArray(rx)){
+                //     if((this.mesh.position.y/this.blockSize-(1-this.proportion.y)/2)%1>0.0001){
+                //         // console.log("rrrrr ",rx, ry, ((this.mesh.position.y/this.blockSize-(1-this.proportion.y)/2)%1>0.1 ? 0.1*this.blockSize : maap[ry+1][rx[0]]=="emp" && maap[ry+1][rx[1]]=="emp" ? 0.1*this.blockSize : 0))
+                //         // this.mesh.position.y += ((this.mesh.position.y/this.blockSize-(1-this.proportion.y)/2)%1>0.1 ? 0.1*this.blockSize : maap[ry+1][rx[0]]=="emp" && maap[ry+1][rx[1]]=="emp" ? 0.1*this.blockSize : 0);
+                //         // if(maap[ry+1][rx[0]]!="emp" || maap[ry+1][rx[1]]!="emp"){
+                //         //     this.onGround = true
+                //         //         this.acceleration = 0;
+                //         //         this.acceleration -= (this.mesh.position.y/this.blockSize-(1-this.proportion.y)/2)%1-0.001;
+                //         // }
+                //         if((this.mesh.position.y/this.blockSize-(1-this.proportion.y)/2)%1>0.4){
+                //             console.log("c-1")
+                //             this.onGround = false
+                //             if(this.acceleration<=0.4){
+                //                 console.log("c-1-1")
+                //                 this.acceleration += 0.04
+                //             }
+                //         }else{
+                //             console.log("c-2-1")
+                //             if(maap[ry+1][rx[0]]=="emp" && maap[ry+1][rx[1]]=="emp"){
+                //                 console.log("c-2-2")
+                //                 this.onGround = false
+                //                 if(this.acceleration<=0.2){
+                //                     this.acceleration += 0.01
+                //                 }
+                //             }else{
+                //                 console.log("c-2-3")
+                //                 this.onGround = true
+                //                 this.acceleration = 0;
+                //                 this.acceleration -= (this.mesh.position.y/this.blockSize-(1-this.proportion.y)/2)%1-0.001;
+                //             }
+                //         }
+                //         if(this.acceleration>0.2){
+                //             console.log("c-2-4")
+                //             // console.log("oooooooooooooooooooooooooooooooooooooooooooooooo")
+                //             this.acceleration = 0.1
+                //         }
+                //         // this.move(0, this.acceleration, true)
+                //         // console.log("c-2-4")
+                        
+                //         this.mesh.position.y += this.acceleration*this.blockSize
+                //         // camera.position.this.acceleration += this.blockSize*this.acceleration;
+                //         if(this.mesh.position.y+this.acceleration > camera.position.y) camera.position.y += this.blockSize*this.acceleration;
+                //          if(this.mesh.position.y+this.acceleration < camera.position.y) camera.position.y+= this.blockSize*this.acceleration;
+                //         // this.mesh.position.y += ((this.mesh.position.y/this.blockSize-(1-this.proportion.y)/2)%1>0.1 ? 0.1*this.blockSize : (maap[ry+1][rx]=="emp") ? 0.1*this.blockSize : 0);
+                //         renderer.render( scene, camera );
+                //     }
+                // }else{
+                //     // console.log((this.mesh.position.y/this.blockSize-(1-this.proportion.y)/2)%1)
+                //     if((this.mesh.position.y/this.blockSize-(1-this.proportion.y)/2)%1>0.0001){
+                //         if((this.mesh.position.y/this.blockSize-(1-this.proportion.y)/2)%1>0.4){
+                //             this.onGround = false
+                //             if(this.acceleration<=0.4){
+                //                 this.acceleration += 0.04
+                //             }
+                //         }else{
+                //             if(maap[ry+1][rx]=="emp"){
+                //                 this.onGround = false
+                //                 if(this.acceleration<=0.2){
+                //                     this.acceleration += 0.01
+                //                 }
+                //             }else{
+                //                 this.onGround = true
+                //                 this.acceleration = 0;
+                //                 this.acceleration -= (this.mesh.position.y/this.blockSize-(1-this.proportion.y)/2)%1-0.001;
+                //             }
+                //         }
+                //         if(this.acceleration>0.2){
+                //             // console.log("oooooooooooooooooooooooooooooooooooooooooooooooo")
+                //             this.acceleration = 0.1
+                //         }
+                //         // this.move(0, this.acceleration, true)
+                //         this.mesh.position.y += this.acceleration*this.blockSize
+                //         // camera.position.this.acceleration += this.blockSize*this.acceleration;
+                //         if(this.mesh.position.y+this.acceleration > camera.position.y) camera.position.y += this.blockSize*this.acceleration;
+                //         if(this.mesh.position.y+this.acceleration < camera.position.y) camera.position.y += this.blockSize*this.acceleration;
+                //         // this.mesh.position.y += ((this.mesh.position.y/this.blockSize-(1-this.proportion.y)/2)%1>0.1 ? 0.1*this.blockSize : (maap[ry+1][rx]=="emp") ? 0.1*this.blockSize : 0);
+                //         renderer.render( scene, camera );
+                //     }else{
+                //         // console.log("SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
+                //     }
+                // }
+            }
+
+            jump(){
+                const gru = this.onGround
+                if(gru===true && !this.inJump){
+
+                    // console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", gru)
+                    this.inJump = true
+                    this.onGround = false
+                    this.acceleration = 0
+                    // this.jumpInt = setInterval(() => {
+                    this.acceleration = -0.20
+                }else{
+                    // console.log("11111111111111111111111111111111111111111111", gru)
+                }
+                // setTimeout(() => {
+                //     this.inJump = false
+                //     this.acceleration = 0
+                // }, 2000)
+                    // this.mesh.position.y -= 0.1*this.blockSize;
+                    // renderer.render( scene, camera );
+                    // if(this.przys>=1.5*this.blockSize){
+                    //     clearInterval(this.jumpInt)
+                    //     this.inJump = false
+                    // }
+                // }, 30);
+            }
+
+        //         const rx = this.round(this.mesh.position.x/this.blockSize);
+        //         const ry = maap.length-this.round(this.mesh.position.y/this.blockSize, true)-1;
+        //         const onBlock = (this.mesh.position.y/this.blockSize)%1 > 0.79 && (this.mesh.position.y/this.blockSize)%1 < 0.81;
+        //         // console.log(this.przys, rx, ry, (this.mesh.position.y/this.blockSize), this.mesh.position.x/this.blockSize, onBlock)
+        //         if(this.przys > -0.0001) {
+        //             // console.log("ennnnnnnnnnnnnnnnnnnnnnnn")
+        //             this.przys = 0;
+        //             this.inJump = false;
+        //         }
+        //         if(maap[ry][rx]=="emp" || (Array.isArray(rx) && maap[ry][rx[0]]=="emp" && maap[ry][rx[1]]=="emp" )) {
+        //             // console.log("1")
+                    
+        //             if(this.przys===0) {
+        //                 // console.log("odlot")
+        //                 this.przys = 0.1;
+        //             } else {
+        //                 console.log(this.przys, rx, ry, (this.mesh.position.y/this.blockSize), this.mesh.position.x/this.blockSize, onBlock)
+        //                 console.log("odddddddddddddddddddd")
+        //                 this.przys += (this.przys<0.8 ? 0.009 : 0);
+        //             }
+        //         }else{
+        //             // console.log("2")
+        //             if(!onBlock && this.inJump==false){
+        //                 if(this.przys>0) this.przys = 0;
+        //                 else {
+        //                     if((this.mesh.position.y/this.blockSize)%1<=0.59){
+        //                         this.przys = -0.02;
+        //                     }else if((this.mesh.position.y/this.blockSize)%1<=0.69){
+        //                         // console.log("dojazd111111111111111111111")
+        //                         this.przys = -0.01;
+        //                     }else if((this.mesh.position.y/this.blockSize)%1<=0.78){
+        //                         // console.log("dojazd22222222222222")
+        //                         this.przys = -0.005;
+        //                     }else if((this.mesh.position.y/this.blockSize)%1<=0.795){
+        //                         // console.log("dojazd!!!!!!!!!!!!!!!")
+        //                         this.przys = -0.0001;
+        //                     }else{
+        //                         // console.log("exceptttttttttttttttttt")
+        //                         this.przys = -0.01;
+        //                     }
+        //                 }
+        //             }
+        //         }
+
+        //         this.move(0, -this.przys, true);
+        //     }
+
+        //     setY(y){
+        //         this.mesh.position.y = y;
+        //     }
+
+        //     jump(){
+        //         if(!this.inJump){
+        //             console.log("j1")
+        //             this.inJump = true;
+        //             this.przys = -0.15;
+        //         }
+        //     }
+
+        //     round(n, single=false){
+        //         if(n%1 <= 0.21) return Math.floor(n);
+        //         if(n%1 >= 0.79) return Math.ceil(n);
+
+        //         // in block
+        //         if(single) return Math.floor(n);
+        //         return [Math.floor(n), Math.ceil(n)];
+        //     }
+
+        //     onBlock(y, x){
+        //         // if(maap[y][x]=="emp") return false;
+        //         // return true;
+        //     }
+
+            move(x, y, gravity=false) {
+                for(let i=1; i<(gravity==true ? 5 : 3); i++){
+                    const ny = y==0 ? 0 : round(y/i, 6)
+                    const nx = x==0 ? 0 : round(x/i, 6)
+                    const p1 = this.getTLP(nx, ny)
+                    const p2 = this.getTRP(nx, ny)
+                    const p3 = this.getBLP(nx, ny)
+                    const p4 = this.getBRP(nx, ny)
+
+                    // if p3 and p4 is on block
+                    if((maap[p3.y][p3.x]!="emp" || maap[p4.y][p4.x]!="emp") && gravity){
+                        this.onGround = true;
+                        this.inJump = false;
+                    }
+
+                    // console.log(p1, p2, p3, p4)
+                    const points = []
+                    points.push(p1)
+                    if(!points.some(p => p.x == p2.x && p.y == p2.y)){ points.push(p2) }
+                    if(!points.some(p => p.x == p3.x && p.y == p3.y)){ points.push(p3) }
+                    if(!points.some(p => p.x == p4.x && p.y == p4.y)){ points.push(p4) }
+                    console.log(gravity, points, nx, ny)
+                    // console.log(x, y)
+                    // if all points are empty
+                    let all = true;
+                    for(let p of points){
+                        if(maap[p.y][p.x] != "emp"){
+                            all = false;
+                            break;
+                        }
+                    }
+                    if(all){
+                        // console.log(":moooooovovovovo", x*this.blockSize, y*this.blockSize)
+                        this.mesh.position.x += nx*this.blockSize;
+                        this.mesh.position.y += ny*this.blockSize;
+                        // if(nx>0 && (this.mesh.position.x+this.blockSize*nx)>window.innerWidth/3 && !(maap[0].length*this.blockSize-(this.mesh.position.x+this.blockSize*nx)<window.innerWidth/3)) camera.position.x += this.blockSize*nx;
+                        // if(nx<0 && (this.mesh.position.x+this.blockSize*nx)>window.innerWidth/3 && !(maap[0].length*this.blockSize-(this.mesh.position.x+this.blockSize*nx)<window.innerWidth/3)) camera.position.x += this.blockSize*nx;
+                        
+                        // if(maap.length*this.blockSize > window.innerHeight && ny>0 && (this.mesh.position.y+this.blockSize*ny)>window.innerHeight/3 && !(maap.length*this.blockSize-(this.mesh.position.y+this.blockSize*ny)<window.innerHeight/3)) camera.position.y += this.blockSize*ny;
+                        // if(maap.length*this.blockSize > window.innerHeight && ny<0 && (this.mesh.position.y+this.blockSize*ny)>window.innerHeight/3 && !(maap.length*this.blockSize-(this.mesh.position.y+this.blockSize*ny)<window.innerHeight/3)) camera.position.y += this.blockSize*ny;
+                        if(maap[0].length*this.blockSize > window.innerWidth){
+                            camera.position.x += this.blockSize*nx;
+                        }
+                        if(maap.length*this.blockSize > window.innerHeight){
+                            camera.position.y += this.blockSize*ny;
+                        }
+                        renderer.render( scene, camera );
+                        return true
+                    }else{
+                        // console.log("fial")
+                        // return false
+                    }
+                    // if(points.every(p => maap[p.y][p.x] == "emp")){
+                    //     console.log(":moooooovovovovo", x*this.blockSize, y*this.blockSize)
+                    //     this.mesh.position.x += x*this.blockSize;
+                    //     this.mesh.position.y += y*this.blockSize;
+                    //     return true
+                    // }else{
+                    //     console.log("fial")
+                    // }
+                }
+                renderer.render( scene, camera );
+                if(gravity){
+                    this.acceleration = 0;
+                    this.onGround = true;
+            }
+                // const ry = Math.ceil((this.mesh.position.y+y)/this.blockSize-(1-this.proportion.y)/2-0.1);
+                // const rx = ((this.mesh.position.x+x)/this.blockSize%1<1-(1-this.proportion.x)/2-0.0001&&(this.mesh.position.x+x)/this.blockSize%1>(1-this.proportion.x)/2+0.0001 ? [Math.floor((this.mesh.position.x+x)/this.blockSize), Math.ceil((this.mesh.position.x+x)/this.blockSize)] : (
+                //     (this.mesh.position.x+x)/this.blockSize%1 <= (1-this.proportion.x)/2+0.0001 ? Math.floor((this.mesh.position.x+x)/this.blockSize) : Math.ceil((this.mesh.position.x+x)/this.blockSize)
+                // ))
+                // // console.log(rx, ry, (this.mesh.position.y+y)/this.blockSize-(1-this.proportion.y)/2-0.0011, ((this.mesh.position.y+y)/this.blockSize-(1-this.proportion.y)/2-0.0011)%1)
+
+                // let rry = ry;
+                // if(((this.mesh.position.y+y)/this.blockSize-(1-this.proportion.y)/2-0.0011)%1 < 0.3001){
+                //     rry = Math.floor((this.mesh.position.y+y)/this.blockSize-(1-this.proportion.y)/2-0.0011);
+                //     console.log("down")
+                // }else{
+                //     if(((this.mesh.position.y+y)/this.blockSize-(1-this.proportion.y)/2-0.0011)%1 > 0.6999){
+                //         rry = Math.ceil((this.mesh.position.y+y)/this.blockSize-(1-this.proportion.y)/2-0.0011);
+                //         console.log("up")
+                //     }else{
+                //         rry = Math.floor((this.mesh.position.y+y)/this.blockSize-(1-this.proportion.y)/2-0.0011);
+                        
+                        
+                //     }
+                // }
+
+                // // move camera if player is on the edge of the screen
+                // // if(this.mesh.position.x+x > camera.position.x) camera.position.x += this.blockSize;
+                // if(x>0 && (this.mesh.position.x+this.blockSize*x)>window.innerWidth/3 && !(maap[0].length*this.blockSize-(this.mesh.position.x+this.blockSize*x)<window.innerWidth/3)) camera.position.x += this.blockSize*x;
+                // // // if(this.mesh.position.x+x < camera.position.x) camera.position.x -= this.blockSize;
+                // if(x<0 && (this.mesh.position.x+this.blockSize*x)>window.innerWidth/3 && !(maap[0].length*this.blockSize-(this.mesh.position.x+this.blockSize*x)<window.innerWidth/3)) camera.position.x += this.blockSize*x;
+                // // // if((this.mesh.position.y+this.blockSize*y)>window.innerHeight/3 && !(maap.length*this.blockSize-(this.mesh.position.y+this.blockSize*y)<window.innerHeight/3)) camera.position.y += this.blockSize*y;
+                // camera.position.y += this.blockSize*y;
+                // if(y>0 && (this.mesh.position.y+this.blockSize*y)>window.innerHeight/3 && !(maap.length*this.blockSize-(this.mesh.position.y+this.blockSize*y)<window.innerHeight/3)) camera.position.y += this.blockSize*y;
+                // // if(this.mesh.position.y+y < camera.position.y) camera.position.y+= this.blockSize*y;
+                
+                // if(!gravity){
+                //     if(Array.isArray(rx)){
+                //         console.log("op-1-0")
+                //         if(maap[ry][rx[1]]=="emp" && maap[ry][rx[0]]=="emp"){
+                //             console.log("op-1-1")
+                //             this.mesh.position.x += x * this.blockSize;
+                //             this.mesh.position.y += y * this.blockSize;
+                //         }else{
+                //             console.log("op-1-3")
+                //             if( this.inJump){
+                //                 this.inJump = false
+                //                 this.acceleration = 0.1
+                //             }
+                //         }
+                //     }else{
+                //         console.log("op-2-0")
+                //         if(maap[ry][rx]=="emp"){
+                //             console.log("op-2-1")
+                //             this.mesh.position.x += x * this.blockSize;
+                //             this.mesh.position.y += y * this.blockSize;
+                //         }else{
+                //             console.log("op-2-2")
+                //             if( this.inJump){
+                //                 this.inJump = false
+                //                 this.acceleration = 0.1
+                //             }
+                //         }
+                //     }
+                // }
+
+
+
+
+                // this.mesh.position.x += x * this.blockSize;
+                // this.mesh.position.y += y * this.blockSize;
+        //         console.log(this.round(this.mesh.position.x/this.blockSize), this.round(this.mesh.position.y/this.blockSize, true)-1)
+        //         // }
+        //         // const newPopY = this.mesh.position.y + (y * this.blockSize);
+        //         // const newPopX = this.mesh.position.x + (x * this.blockSize);
+
+        //         // const rx = this.round(this.mesh.position.x/this.blockSize);
+        //         // const ry = maap.length-this.round(this.mesh.position.y/this.blockSize, true)-1;
+        //         // // const rx = this.round(newPopX/this.blockSize);
+        //         // const rx1 = Math.ceil(newPopX/this.blockSize);
+        //         // const rx2 = Math.floor(newPopX/this.blockSize);
+        //         // // const ry = maap.length- this.round(newPopY/this.blockSize, true)-2;
+        //         // const ry2 = maap.length- this.round(this.mesh.position.y/this.blockSize, true)-2;
+        //         // // console.log(newPopX/this.blockSize, rx1, rx2, rx, ry, (maap[ry][rx]=="emp"),  (Array.isArray(rx)), maap[ry][rx[0]]=="emp",  maap[ry][rx[1]]=="emp")
+        //         // console.log(rx, ry, ry2, (maap[ry][rx]=="emp" 
+        //         //     || (
+        //         //         Array.isArray(rx) 
+        //         //         && maap[ry][rx1]=="emp" 
+        //         //         && maap[ry][rx2]=="emp"
+        //         //     )), (maap[ry2][rx]=="emp" 
+        //         //     || (
+        //         //         Array.isArray(rx) 
+        //         //         && maap[ry2][rx1]=="emp" 
+        //         //         && maap[ry2][rx2]=="emp"
+        //         // )))
+        //         // if(
+        //         //     (
+        //         //         (
+        //         //             maap[ry][rx]=="emp" 
+        //         //             || (
+        //         //                 Array.isArray(rx) 
+        //         //                 && maap[ry][rx1]=="emp" 
+        //         //                 && maap[ry][rx2]=="emp"
+        //         //             )
+        //         //         )
+                        
+                    
+        //         //     ) || gravity){
+        //         //     if(gravity){
+        //         //         this.mesh.position.y += y * this.blockSize;
+        //         //     }else{
+        //         //         this.mesh.position.x += x * this.blockSize;
+        //         //         this.mesh.position.y += y * this.blockSize;
+        //         //     }
+        //         // }
+                
+                
+                
+        //         // if(x>0){
+        //         //     // cheak that player can move right
+        //         //     const rx = this.x+x;
+        //         //     const ry = this.y;
+        //         //     const rx2 = Math.ceil(rx);
+        //         //     const ry2 = Math.round(ry);
+        //         //     if(maap[ry2][rx2] == "emp"){
+        //         //         this.x = rx;
+        //         //         this.mesh.position.x = this.x * blockSize;
+        //         //         renderer.render( scene, camera );
+        //         //     }
+        //         // }
+                
+        //         // if(y<0){
+        //         //     // cheak that player can move down
+        //         //     const rx = this.x;
+        //         //     const ry = this.y+y;
+        //         //     const rx2a = Math.floor(rx);
+        //         //     const rx2b = Math.ceil(rx);
+        //         //     const ry2 = Math.floor(ry);
+        //         //     console.log("ddo", rx2a, rx2b, ry2, rx, ry)
+        //         //     if(maap[ry2][rx2a] == "emp"&&maap[ry2][rx2b] == "emp"){
+        //         //         this.y = ry;
+        //         //         this.mesh.position.y = this.y * blockSize;
+        //         //         renderer.render( scene, camera );
+        //         //     }else{
+        //         //         // console.log("RY: ", ry2, ry)
+        //         //         this.y = Math.ceil(ry);
+        //         //         this.mesh.position.y = this.y * blockSize;
+        //         //         renderer.render( scene, camera );
+        //         //     }
+        //         // }else{
+        //         //     console.log("correction", this.y, y)
+        //         // }
+
+        //         // if(y>0){
+        //         //     // cheak that player can move up
+        //         //     const rx = this.x;
+        //         //     const ry = this.y+y;
+        //         //     const rx2a = Math.floor(rx);
+        //         //     const rx2b = Math.ceil(rx);
+        //         //     const ry2 = Math.ceil(ry);
+        //         //     if(maap[ry2][rx2a] == "emp"&&maap[ry2][rx2b] == "emp"){
+        //         //         this.y = ry;
+        //         //         this.mesh.position.y = this.y * blockSize;
+        //         //         renderer.render( scene, camera );
+        //         //     }
+        //         // }
+                
+        //         // this.x += x;
+        //         // this.y += y;
+        //         // this.mesh.position.x = this.x * blockSize;
+        //         // this.mesh.position.y = this.y * blockSize;
+        //         renderer.render( scene, camera );
+            }
+        }
+
+        const player = new Player(1, 3);
+
+
+
+        // maap.forEach((row, y) => {
+        //     row.forEach((col, x) => {
+        //         if(col != "emp"){
+        //             const geometry = new THREE.BoxGeometry();
+        //             const material = new THREE.MeshBasicMaterial( { color: col } );
+        //             const cube = new THREE.Mesh( geometry, material );
+        //             cube.position.x = x * 10;
+        //             cube.position.y = y * 10;
+        //             scene.add( cube );
+        //         }else{
+        //             const geometry = new THREE.BoxGeometry();
+        //             const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+        //             const cube = new THREE.Mesh( geometry, material );
+        //             cube.position.x = x;
+        //             cube.position.y = y;
+        //             scene.add( cube );
+        //         }
+        //     })
+        // })
+
+        let keysPressed = {};
+
+        document.addEventListener('keydown', (event) => {
+            if(event.key == " "){
+                keysPressed["Space"] = true;
+            }else{
+                keysPressed[event.key] = true;
+            }
+
+            
+        });
+        document.addEventListener('keyup', (event) => {
+            // console.log(">>", event.key)
+            if(event.key == " "){
+                delete keysPressed["Space"];
+            }else{
+                delete keysPressed[event.key];
+            }
+        });
+
+        setInterval(() => {
+            if(keysPressed["ArrowUp"]){
+                player.move(0, -0.2);
+            }
+            if(keysPressed["ArrowDown"]){
+                player.move(0, 0.1);
+            }
+            if(keysPressed[ "ArrowLeft"]){
+                player.move(-0.1, 0);
+            }
+            if(keysPressed["ArrowRight"]){
+                player.move(0.1, 0);
+            }
+            if(keysPressed["Space"]){
+                console.log("jump")
+                player.jump();
+            }
+
+            if(keysPressed["w"]){
+                camera.position.y -= 2;
+            }else if(keysPressed["s"]){
+                camera.position.y += 2;
+            }else if(keysPressed["a"]){
+                camera.position.x -= 2;
+            }else if(keysPressed["d"]){
+                camera.position.x += 2;
+            }else if(keysPressed["q"]){
+                camera.position.z -= 2;
+                // console.log(camera.position)
+                // camera.position.set(0, 0, 0);
+            }else if(keysPressed["e"]){
+                camera.position.z += 2;
+            }
+            renderer.render( scene, camera );
+        }, 30);
+        // on arrow key press move the player
+        // document.addEventListener('keydown', (event) => {
+            
+        // }, false);
+
+
+        </script>
+</body>
+</html>
